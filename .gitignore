@@ -1,3 +1,15 @@
 data/
 cache/
 *.csv
+
+config.py
+
+model/*/
+
+*.h5
+
+__pycache__
+
+*.html
+*.png
+*.log

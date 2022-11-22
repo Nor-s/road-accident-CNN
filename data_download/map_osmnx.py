@@ -1,5 +1,5 @@
 # 2022 Nor-s
-
+# 2022 05 35 11 22
 import osmnx as ox, networkx as nx, geopandas as gpd, matplotlib.pyplot as plt
 from shapely.geometry import Point, Polygon, LineString
 from descartes import PolygonPatch
@@ -11,15 +11,84 @@ from multiprocessing import Pool, cpu_count
 import pandas as pd
 import os
 
-ox.config(use_cache=True, log_console=False)
+ox.settings.log_console=False
+ox.settings.use_cache=True
 ox.__version__
 
 def make_dirs(dirs):
     if not os.path.exists(dirs):
         os.makedirs(dirs)
 
-class KoreaRoadMap():
+class OsmnxDownload():
+    def __init__(self, name = 'osmnx'):
+        self.save_folder = f'./data/{name}'
+        self.save_img_folder = f'{self.save_folder}/images'
+
+        self.street_widths = {'footway' : 0.5,
+                 'steps' : 0.5,
+                 'pedestrian' : 0.5,
+                 'path' : 0.5,
+                 'track' : 0.5,
+                 'service' : 2,
+                 'residential' : 3,
+                 'primary' : 5,
+                 'motorway' : 6}
+        self.dpi = 40
+        self.dist = 80 # 100m
+        self.network_type = 'all'
+        
+    def init_directory(self):
+        make_dirs(self.save_folder)
+        make_dirs(self.save_img_folder)   
+        
+    def save_map_image(self, lon, lat, idx):
+        try:
+            print(lat, lon)
+            point = (lat, lon)
+            fp = f"{self.save_img_folder}/{idx}.png"
+            fig, ax = ox.plot_figure_ground(
+                        point=point, 
+                        dist=self.dist,
+                        filepath =fp,
+                        network_type=self.network_type, 
+                        street_widths=self.street_widths, 
+                        dpi=self.dpi,
+                        save=True,
+                        show=False,
+                        close=True,
+                        )
+            
+        except Exception as e:
+            print(f'error {lat}, {lon}: {str(e)}')
+            return
+        # print(f'{int(idx)}.png : {lon}, {lat}')
+
+    def work_save_map_image(self, lon_lat_list):
+        pool = Pool(cpu_count()-6)
+
+        print('\n--------------start map--------------\n')
+        pool.starmap(self.save_map_image, lon_lat_list)
+        pool.close()
+        pool.join()
+        print('==============end  work==============\n')
+    
+    def work_csv(self, csv_path):
+        filename = os.path.basename(csv_path)
+        filename = os.path.splitext(filename)[0]
+        self.save_folder = f'./data/{filename}'
+        self.save_img_folder = f'{self.save_folder}/images'
+        self.init_directory()
+        
+        df = pd.read_csv(csv_path)
+        df = df.loc[:,['lon', 'lat', 'filename']]
+        print(df.head())
+
+        self.work_save_map_image(df.values.tolist()[0:10000])
+        
+        
+class KoreaRoadMap(OsmnxDownload):
     def __init__(self):
+        super().__init__()
         self.city_list = ['서울', '부산', '대구', '인천', '광주', '대전', '울산']
         self.city_size = len(self.city_list)
         self.street_widths = {'footway' : 0.5,
@@ -35,13 +104,9 @@ class KoreaRoadMap():
         self.save_folder = './data/korea_load/'
         self.save_img_folder = f'{self.save_folder}/images'
         self.sample_size = [2000,  1000,   1000,   2000,   1000,   1000,   2000]
-        self.dist = 50 # 100m
+        self.dist = 80 # 100m
         self.network_type = 'all'
-
-    def init_directory(self):
-        make_dirs(self.save_folder)
-        make_dirs(self.save_img_folder)
-
+        
     def get_city_graph(self, city_name):
         return ox.graph_from_place(f'{city_name}, 대한민국', network_type='drive', simplify=False) 
     
@@ -77,45 +142,14 @@ class KoreaRoadMap():
         print(f'city_idx: {city_idx}, idx_list: {len(idx_list)}')
         return self.get_lon_lat_list(G, G_list, idx_list)
 
-
     def get_random_city_lon_lat(self, city_idx):
         G, G_list = self.get_graph_and_list(city_idx)
         random_list = sample(range(0, len(G_list)), self.sample_size[city_idx])
         print(f'city_idx: {city_idx}, random_list: {len(random_list)}')
         return self.get_lon_lat_list(G, G_list, random_list)
-
-    def save_map_image(self, lon, lat, idx):
-        try:
-            point = (lat, lon)
-            fp = f"{self.save_img_folder}/{int(idx)}.png"
-            fig, ax = ox.plot_figure_ground(
-                        point=point, 
-                        dist=self.dist,
-                        filepath =fp,
-                        network_type=self.network_type, 
-                        street_widths=self.street_widths, 
-                        dpi=self.dpi,
-                        save=True,
-                        show=False,
-                        close=True,
-                        )
-            
-        except Exception as e:
-            print(f'error {lat}, {lon}: {str(e)}')
-            return
-        # print(f'{int(idx)}.png : {lon}, {lat}')
-    
-    def work_save_map_image(self, lon_lat_list):
-        pool = Pool(cpu_count())
-
-        print('\n--------------start map--------------\n')
-        pool.starmap(self.save_map_image, lon_lat_list)
-        pool.close()
-        pool.join()
-        print('==============end  work==============\n')
         
 
-
+# 광역시 랜덤 도로노드 도로 네트워크 수집
 class KoreaRandomRoadMapDownloader(KoreaRoadMap):
     def __init__(self):
         super().__init__()
@@ -165,6 +199,7 @@ class KoreaRandomRoadMapDownloader(KoreaRoadMap):
         pool.join()
         print('==============end  work==============\n')
     
+#  한국 사고다발지역이 아닌 도로 네트워크 다운로드 (사고다발지 중심점에서 500m 떨어진 한국 광역시 도로 노드  수집)
 class KoreaNoAccidentRoadMapDownloader(KoreaRoadMap):
     def __init__(self):
         super().__init__()
@@ -233,6 +268,7 @@ class KoreaNoAccidentRoadMapDownloader(KoreaRoadMap):
         pool.join()
         print('==============end  work==============\n')
 
+#  한국 사고다발지역 도로 네트워크 다운로드 (데이터 수를 늘리기 위해 중심점에서 100m 떨어진 지점 수집)
 class KoreaAccidentRoadMapDownloader(KoreaRoadMap):
     def __init__(self):
         super().__init__()
@@ -285,12 +321,11 @@ class KoreaAccidentRoadMapDownloader(KoreaRoadMap):
 
     
 if __name__ == '__main__':
-
-
     # map_downloader = KoreaAccidentRoadMapDownloader()
     # map_downloader.work()
-
     # map_downloader = KoreaNoAccidentRoadMapDownloader()
     # map_downloader.work()    
-    map_downloader = KoreaRandomRoadMapDownloader()
-    map_downloader.work()
+    # map_downloader = KoreaRandomRoadMapDownloader()
+    # map_downloader.work()
+    map_downloader = OsmnxDownload()
+    map_downloader.work_csv('D:\\1_SW2\\data\\us_accident_lon_lat_15.csv')
