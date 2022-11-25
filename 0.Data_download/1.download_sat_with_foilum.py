@@ -42,9 +42,13 @@ class FoliumCrawl():
         self.zoom_start = 17
         self.save_path = f'./data/foilum-image_kr'
         self.html_path = f'{self.save_path}/html'
-        self.png_path = f'{self.save_path}/png'
-        self.tiles = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png'
-        self.attr= 'CartoDB.Voyager'
+        # self.tiles = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png'
+        # self.attr= 'CartoDB.Voyager'
+        # tiles = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        # attr = 'Esri'
+        self.tiles = f"http://api.vworld.kr/req/wmts/1.0.0/{vworld_key}/Satellite/{{z}}/{{y}}/{{x}}.jpeg"
+        self.attr = "Vworld"
+        self.png_path = f'{self.save_path}/png_{self.attr.replace(".", "_")}'
         self.max_zoom=18
         self.size_wh = [600, 600]
         self.reszie_wh = 180
@@ -62,17 +66,13 @@ class FoliumCrawl():
     def screenshot(self, lat, lon, idx = -1):
         m = folium.Map(location=[lat, lon],
                     zoom_start=self.zoom_start, 
-                    # tiles= self.tiles, 
-                    # attr= self.attr,
-                    # tiles = f"http://api.vworld.kr/req/wmts/1.0.0/{vworld_key}/Satellite/{{z}}/{{y}}/{{x}}.jpeg",
-                    # attr = "Vworld"
-                    tiles = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-                    attr = 'Esri'
+                    tiles= self.tiles, 
+                    attr= self.attr
                     )
         filename = f'{lat}_{lon}'
 
-        if filename != -1:
-            filename = int(idx);
+        # if filename != -1:
+        #     filename = int(idx);
 
         img = m._to_png()
         img = np.fromstring(img, dtype = np.uint8)
@@ -95,6 +95,16 @@ class FoliumCrawl():
         print('cpu_count: ', cpu_count())
         us = pd.read_csv(csv,  encoding='cp949' , header = 0, engine = 'python')
         latlon = us.loc[:, ['lat', 'lon', 'index']]
+        # print(len(latlon))
+        # print(len(latlon['index'].unique()))
+
+        # import glob
+        # output = glob.glob(f'{self.png_path}/*.png')
+        # filelist = [float(os.path.splitext(os.path.basename(x))[0]) for x in output]
+        # print(len(filelist))
+        # for f in filelist:
+        #     latlon = latlon[latlon['index'] != f]
+        # print(len(latlon))
         pool = Pool(cpu_count()*2)
         pool.starmap(self.screenshot, latlon.values.tolist())
         pool.close()
@@ -120,7 +130,7 @@ class USAccidentDownloader(FoliumCrawl):
         count = count.sample(n=min(self.sample_num, len(count) ), random_state=1004, replace=False)
         count = count[10000:]
         lon_lat_list = count.values.tolist()
-        pool = Pool(cpu_count()-1)
+        pool = Pool(cpu_count()*3)
         pool.starmap(self.screenshot, lon_lat_list)
         pool.close()
         pool.join()

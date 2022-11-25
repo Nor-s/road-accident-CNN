@@ -1,5 +1,3 @@
-# 2022 Nor-s
-# 2022 05 35 11 22
 import osmnx as ox, networkx as nx, geopandas as gpd, matplotlib.pyplot as plt
 from shapely.geometry import Point, Polygon, LineString
 from descartes import PolygonPatch
