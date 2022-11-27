@@ -13,3 +13,5 @@ __pycache__
 *.html
 *.png
 *.log
+
+tmp_folder
