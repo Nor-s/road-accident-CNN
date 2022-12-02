@@ -15,3 +15,5 @@ __pycache__
 *.log
 
 tmp_folder
+
+tmp_data
