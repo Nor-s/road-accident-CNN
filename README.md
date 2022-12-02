@@ -1,18 +1,19 @@
 # 공간 데이터를 통한 이륜차 사고다발지 예측
 
-- 해외와는 다르게 국내 도로 이미지 데이터를 활용한 사고다발지 예측에 관한 프로젝트를 찾을 수 없었기에 국내 사고다발지 좌표데이터를 사용하여 사고다발지를 예측해보고자함.
+- 해외와는 다르게 국내 도로 이미지를 활용한 사고다발지 예측에 관한 프로젝트를 찾을 수 없었기에 국내 사고다발지 좌표데이터를 사용하여 사고다발지를 예측해보고자함.
 - 다양한 시도를 통해 해외 관련 프로젝트들과 성능차이를 내보고자함.
 
 ## 데이터 수집
 
-### CSV 데이터
+### CSV, Exel 데이터
 
-- 국내 사고다발지 좌표:
+- 국내 사고다발지 좌표: https://www.data.go.kr/data/15105286/openapi.do
+
 - 서울시 공간 데이터 (데이터 탐색에 활용)
-  - CCTV 좌표:
-  - 과속방지턱 좌표
-  - 횡단보도 좌표:
-  - 신호등 좌표:
+  - CCTV 좌표: https://www.localdata.go.kr/lif/lifeCtacDataView.do?opnEtcSvcId=12_04_08_E
+  - 과속방지턱 좌표: https://www.localdata.go.kr/lif/lifeCtacDataView.do?opnEtcSvcId=12_04_06_E
+  - 횡단보도 좌표: http://data.seoul.go.kr/dataList/OA-15554/S/1/datasetView.do
+  - 신호등 좌표: http://data.seoul.go.kr/dataList/OA-15554/S/1/datasetView.do;jsessionid=4B75D6E2529334747BAE40CC7FB013D5.new_portal-svr-11
 
 
 ### 이미지 데이터
@@ -59,3 +60,10 @@
 
 
 ## 관련 프로젝트 비교
+
+|프로젝트|정확도|클래스 수|해상도|
+|-|-|-|-|
+|[Combining Satellite Imagery and Open Data to Map Road Safety](https://ojs.aaai.org/index.php/AAAI/article/view/11168/11027)|78%|3|Google Static Maps API 256×256 pixels, zoom levels (18, 19, and 20).|
+|[RoadAccidents](https://github.com/Polmax/RoadAccidents)|78%| 2|200m x 200m| 
+|[NYC_Traffic_Safety_Project](https://github.com/panzihang/NYC_Traffic_Safety_Project)| 74.29%| 5| ?|
+|[Traffic-Accidents](https://github.com/chineseballer06/Traffic-Accidents)|82%|2|?|
